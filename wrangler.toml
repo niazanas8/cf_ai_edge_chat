@@ -1,0 +1,17 @@
+name = "cf_ai_edge_chat"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "public"
+
+[ai]
+binding = "AI"
+
+[[durable_objects.bindings]]
+name = "CHAT_SESSIONS"
+class_name = "ChatSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChatSession"]

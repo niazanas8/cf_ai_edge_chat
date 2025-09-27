@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cf_ai_edge_chat</title>
+    <style>
+      :root { --border:#ddd; --text:#111; --muted:#666; }
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--text);
+             max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.5rem; margin: 0 0 .5rem; }
+      p.note { color: var(--muted); margin: 0 0 1rem; }
+      #log { border: 1px solid var(--border); padding: 1rem; border-radius: 10px; min-height: 300px;
+             display: flex; flex-direction: column; gap: .5rem; background: #fff; }
+      .row { line-height: 1.45; }
+      .user { color: #2563eb; }
+      .bot  { color: #16a34a; }
+      .sys  { color: var(--muted); font-style: italic; }
+      form { position: sticky; bottom: 0; background: #fff; display: flex; gap: 8px; margin-top: 1rem; }
+      textarea { flex: 1; padding: .75rem; border: 1px solid var(--border); border-radius: 10px; resize: vertical; min-height: 44px; }
+      button { padding: .75rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: #f7f7f7; cursor: pointer; }
+      button[disabled], textarea[disabled] { opacity: .6; cursor: not-allowed; }
+      .toolbar { display: flex; gap: 10px; align-items: center; margin-top: .5rem; color: var(--muted); font-size: .9rem; }
+      .right { margin-left: auto; }
+      .hidden { display: none; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <h1>Cloudflare AI Chat</h1>
+    <p class="note">Type a message and the Worker will call Workers AI (Llama 3.x). Memory is per-session.</p>
+
+    <div id="log" aria-live="polite"></div>
+
+    <div class="toolbar">
+      <span id="status" class="hidden">typing…</span>
+      <span class="right">
+        <button id="clear" type="button" title="Clear chat (local only)">Clear</button>
+      </span>
+    </div>
+
+    <form id="f" autocomplete="off">
+      <textarea id="m" placeholder="Say something… (Shift+Enter for newline)" autofocus></textarea>
+      <button id="send">Send</button>
+    </form>
+
+    <script>
+      const log = document.getElementById('log');
+      const form = document.getElementById('f');
+      const input = document.getElementById('m');
+      const sendBtn = document.getElementById('send');
+      const statusEl = document.getElementById('status');
+      const clearBtn = document.getElementById('clear');
+
+      // Restore previous UI log (client-side only)
+      const LS_KEY = 'cf_ai_edge_chat_log';
+      try { (JSON.parse(localStorage.getItem(LS_KEY) || '[]') || []).forEach(({role, text}) => append(role, text)); } catch {}
+
+      function saveLog() {
+        const rows = Array.from(log.querySelectorAll('.row')).map(p => {
+          const isUser = p.classList.contains('user');
+          const isBot  = p.classList.contains('bot');
+          const role = isUser ? 'user' : (isBot ? 'bot' : 'sys');
+          const text = p.dataset.raw || p.textContent.replace(/^You:\s|^Bot:\s/, '');
+          return { role, text };
+        });
+        localStorage.setItem(LS_KEY, JSON.stringify(rows.slice(-200)));
+      }
+
+      function append(role, text) {
+        const p = document.createElement('div');
+        p.className = `row ${role} mono`;
+        p.dataset.raw = text;
+        p.textContent = (role === 'user' ? 'You: ' : role === 'bot' ? 'Bot: ' : '') + text;
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+        saveLog();
+      }
+
+      function setLoading(loading) {
+        input.disabled = loading;
+        sendBtn.disabled = loading;
+        statusEl.classList.toggle('hidden', !loading);
+      }
+
+      // Clear UI log (does not clear server memory)
+      clearBtn.addEventListener('click', () => {
+        log.innerHTML = '';
+        saveLog();
+        input.focus();
+      });
+
+      // Support Shift+Enter for newline, Enter to send
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+
+        append('user', text);
+        input.value = '';
+        setLoading(true);
+
+        try {
+          const r = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ message: text })
+          });
+
+          let data = null;
+          try { data = await r.json(); } catch { /* ignore */ }
+
+          if (!r.ok) {
+            append('sys', `Server error (${r.status})${data?.error ? ': ' + data.error : ''}`);
+          } else {
+            append('bot', data?.reply || '(no reply)');
+          }
+        } catch (err) {
+          append('sys', 'Network error. Please try again.');
+        } finally {
+          setLoading(false);
+          input.focus();
+        }
+      });
+    </script>
+  </body>
+</html>
