@@ -14,7 +14,7 @@ Small chat app for Cloudflare’s optional AI assignment.
 ---
 
 ## Run (deployment only)
-```bash
+
 npm install
 npm run deploy
 
