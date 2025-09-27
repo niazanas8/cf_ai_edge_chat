@@ -1,0 +1,7 @@
+node_modules
+.wrangler
+dist
+.bundle
+.DS_Store
+*.log
+*.tgz
