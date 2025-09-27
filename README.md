@@ -9,7 +9,7 @@ An AI chat app built with **Cloudflare Workers** + **Workers AI**, featuring per
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange)](#)
 
 ## 🚀 Live Demo
-https://cf-ai-edge-chat.niaznas8.workers.dev
+https://cf_ai_edge_chat.niazanas8.workers.dev
 
 ## 🖼️ Screenshot
 
