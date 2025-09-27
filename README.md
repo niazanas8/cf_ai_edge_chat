@@ -1,6 +1,6 @@
 # cf_ai_edge_chat
 
-Small chat app for Cloudflare’s optional AI assignment.
+##Small chat app for Cloudflare’s optional AI assignment.
 
 - **LLM:** Workers AI `@cf/meta/llama-3.1-8b-instruct`
 - **Coordination:** Cloudflare Worker (routes: `/api/chat`, `/health`)
