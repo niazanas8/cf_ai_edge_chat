@@ -15,8 +15,8 @@ Small chat app for Cloudflare’s optional AI assignment.
 
 ## Run (deployment only)
 
-npm install
-npm run deploy
+-npm install
+-npm run deploy
 
 ## How it works
 ### API routes
@@ -28,7 +28,7 @@ npm run deploy
 
 ### Durable Object (internal RPC from the Worker)
 - **POST `do:/load`** → returns:
-  ```json
+  json
   { "messages": [ { "role": "user" | "assistant", "content": "..." } ] }
 
 ## Files
